@@ -209,16 +209,19 @@ const Marlin = function (app) {
 
                 const dry = conductorCommentResult[2].toLowerCase() === 'true';
 
-                // If the printer is currently parked, then purge and unpark it
-                self.queue.queueCommands({
-                  code: 'M400',
-                  postCallback: () => {
-                    if (self.fsm.current === 'parkedJob') {
-                      self.commands.unpark(self, { dry });
-                    }
-                    self.lr.resume();
-                  },
-                });
+                if (!dry) {
+                  self.queue.queueCommands({
+                    code: 'M400',
+                    postCallback: () => {
+                      if (self.fsm.current === 'parkedJob') {
+                        self.commands.unpark(self);
+                      }
+                      self.lr.resume();
+                    },
+                  });
+                } else {
+                  self.lr.resume();
+                }
                 break;
               }
               default: {
@@ -238,6 +241,17 @@ const Marlin = function (app) {
               command = self.addOffset(command);
               command = self.addSpeedMultiplier(command);
               command = self.addFeedMultiplier(command);
+
+              if (self.fsm.current === 'parkedJob') {
+                // Strip the Y axis from the command if jogging when parked
+                const commandArgs = command.split(' ');
+                for (let i = 0; i < commandArgs.length; i++) {
+                  if (commandArgs[i].indexOf('Y') !== -1) {
+                    commandArgs.splice(i, 1);
+                  }
+                }
+                command = commandArgs.join(' ');
+              }
 
               self.queue.queueCommands({
                 code: command,
