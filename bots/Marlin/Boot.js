@@ -69,21 +69,19 @@ const Boot = function Boot(app) {
       }
       return self.getBot();
     },
-    unpark: function unpark(self, params) {
+    unpark: function unpark(self) {
       try {
         if (self.fsm.current === 'parkedJob') {
           self.fsm.unparkJob();
           const commandArray = [];
           const purgeAmount = 20;
-          if (params.dry === false) {
-            commandArray.push('G92 E0');
-            commandArray.push(`G1 E${purgeAmount} F100`); // Purge
-            commandArray.push(`G1 E${purgeAmount - 2} F3000`); // Retract
-            const xPos = self.settings.name.indexOf('bot1') === -1 ? 460 : 40;
-            commandArray.push(`G1 X${xPos} Y52 F1000`); // Scrub
-            commandArray.push('G92 E-2'); // Prepare extruder for E0
-            commandArray.push('G4 P0'); // Clear motion buffer before saying we're done
-          }
+          commandArray.push('G92 E0');
+          commandArray.push(`G1 E${purgeAmount} F100`); // Purge
+          commandArray.push(`G1 E${purgeAmount - 2} F3000`); // Retract
+          const xPos = self.settings.name.indexOf('bot1') === -1 ? 460 : 40;
+          commandArray.push(`G1 X${xPos} Y52 F1000`); // Scrub
+          commandArray.push('G92 E-2'); // Prepare extruder for E0
+          commandArray.push('G4 P0'); // Clear motion buffer before saying we're done
           commandArray.push({
             postCallback: () => {
               self.fsm.unparkJobDone();
