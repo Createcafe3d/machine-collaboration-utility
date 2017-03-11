@@ -66,7 +66,16 @@ export default class Bots extends React.Component {
     const botLinkList = [];
     botLinkList.push(<Button key="createBot" className="add-bot" onClick={this.toggleModal}>+</Button>);
 
-    for(const [botUuid, bot] of _.pairs(this.props.bots)) {
+    const botListArray = _.pairs(this.props.bots);
+
+    // Sort the bots alphabetically, but capital letters go before lower case letters
+    botListArray.sort((a, b) => {
+      return a[1].settings.name > b[1].settings.name;
+    });
+
+    // Sort the bots in alphabetical order
+
+    for (const [botUuid, bot] of botListArray) {
       const botElement = <NavLink key={botUuid} className="bot-tabs" to={`/${botUuid}`}>{bot.settings.name}</NavLink>;
       botLinkList.push(botElement);
     };
@@ -204,7 +213,7 @@ export default class Bots extends React.Component {
     }
     // if the bot doesn't exist, we want to redirect the user...
     // if the user hasn't selected a bot, redirect them to the first available bot
-    const daBot = selectedBot === undefined ? '' : <Bot currentJob={currentJob} conducting={this.props.conducting} botPresets={this.props.botPresets} bot={selectedBot}/>;
+    const daBot = selectedBot === undefined ? '' : <Bot currentJob={currentJob} botPresets={this.props.botPresets} bot={selectedBot}/>;
 
     return (
       <div>

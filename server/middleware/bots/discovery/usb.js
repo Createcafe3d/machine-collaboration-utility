@@ -23,12 +23,22 @@ const UsbDiscovery = function(app) {
   this.ports = {};
 };
 
+UsbDiscovery.prototype.substituteSerialNumberForPnpId = function(port) {
+  if (port.pnpId === undefined) {
+    if (port.serialNumber !== undefined) {
+      port.pnpId = port.serialNumber;
+    }
+  }
+  return port;
+};
+
 UsbDiscovery.prototype.initialize = bsync(function initialize() {
   const self = this;
   usb.on('attach', bsync(() => {
     // Need to wait arbitrary amount of time for Serialport list to update
     bwait(Promise.delay(100));
     SerialPort.list((err, ports) => {
+      ports = ports.map(this.substituteSerialNumberForPnpId);
       // Compare every available port against every known port
       for (const port of ports) {
         // Ignore ports with undefined vid pids
@@ -48,6 +58,7 @@ UsbDiscovery.prototype.initialize = bsync(function initialize() {
     bwait(Promise.delay(100));
     const portsToRemove = [];
     SerialPort.list(bsync((err, ports) => {
+      ports = ports.map(this.substituteSerialNumberForPnpId);
       // Go through every known port
       for (const [portKey, listedPort] of _.pairs(self.ports)) {
         const foundPort = ports.find((port) => {
@@ -90,6 +101,7 @@ UsbDiscovery.prototype.initialize = bsync(function initialize() {
 
   // Scan through all known serial ports and check if any of them are bots
   SerialPort.list((err, ports) => {
+    ports = ports.map(this.substituteSerialNumberForPnpId);
     for (const port of ports) {
       if (port.vendorId !== undefined && port.productId !== undefined) {
         // Add each known serial port to the list
@@ -109,17 +121,29 @@ UsbDiscovery.prototype.detectPort = bsync(function detectPort(port) {
 
   for (const [botPresetKey, botPresets] of _.pairs(this.app.context.bots.botSettingList)) {
     if (botPresets.info.connectionType === 'serial') {
-      if (vid === botPresets.info.vid && pid === botPresets.info.pid) {
-        // Pass the detected preset to populate new settings
-        const persistentCheck = bwait(this.checkForPersistentSettings(port, botPresets));
-        let botObject;
-        if (persistentCheck.original) {
-          botObject = bwait(this.app.context.bots.createPersistentBot(persistentCheck.foundPresets.settings));
-        } else {
-          botObject = bwait(this.app.context.bots.createBot(persistentCheck.foundPresets.settings));
+      for (const vidPid of botPresets.info.vidPid) {
+        // Don't process a greedy, undefined vid pid
+        if (vidPid.vid === -1 && vidPid.pidlin === -1) {
+          return;
         }
-        botObject.setPort(port.comName);
-        botObject.detect();
+
+        // Allow printers to ignore the vendor id or product id by setting to -1
+        if (
+          (vid === vidPid.vid || vidPid.vid === -1) &&
+          (pid === vidPid.pid || vidPid.pid === -1)
+        ) {
+          // Pass the detected preset to populate new settings
+          const persistentCheck = bwait(this.checkForPersistentSettings(port, botPresets));
+          let botObject;
+          if (persistentCheck.original) {
+            botObject = bwait(this.app.context.bots.createPersistentBot(persistentCheck.foundPresets.settings));
+          } else {
+            botObject = bwait(this.app.context.bots.createBot(persistentCheck.foundPresets.settings));
+          }
+          botObject.setPort(port.comName);
+          botObject.detect();
+          return;
+        }
       }
     }
   }

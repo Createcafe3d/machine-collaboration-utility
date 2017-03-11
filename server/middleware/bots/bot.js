@@ -161,6 +161,7 @@ Bot.prototype.getBot = function getBot() {
     port: this.port,
     settings: this.settings,
     subscribers: this.subscribers,
+    info: this.info,
     currentJob,
   };
 };
@@ -297,7 +298,8 @@ Bot.prototype.detect = function detect() {
           this.app,
           this.port,
           this.info.baudrate,
-          openPrime
+          openPrime,
+          this
         );
         validator = this.validateSerialReply;
         break;

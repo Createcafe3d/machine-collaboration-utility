@@ -4,8 +4,8 @@ A generalized host for communicating with hardware.
 Built with Raspberry Pi and Arduino (Marlin Firmware) in mind, but extensible for other firmware and communication protocols.
 
 ## How to use
-
-Download the Raspberry Pi image [here](https://drive.google.com/file/d/0B7k-k73S74JBaDN5eGozbjkyYWM/view?usp=sharing).  
+                                       
+Download the Raspberry Pi image [here](https://drive.google.com/open?id=0B7k-k73S74JBcVV0R2lOSEtLelE).  
 
 ### Install Raspberry Pi usb driver libraries (Only necessary if using a Raspberry Pi)
 ```
@@ -59,7 +59,8 @@ sudo tar -xvzf postgresql-9.4.4-raspbian.tgz
 echo "deb [ trusted=yes ] file:///var/local/repository ./" | sudo tee /etc/apt/sources.list.d/my_own_repo.list  
 sudo apt-get update  
 sudo apt-get install postgresql-9.4  
-sudo service postgresql start  
+sudo systemctl enable postgresql
+sudo systemctl start postgresql  
 
 ```
 Create a '.env' file in the project's root folder with the following information:  

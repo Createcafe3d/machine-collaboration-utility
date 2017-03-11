@@ -64,14 +64,23 @@ export default class Files extends React.Component {
 
   createBotList() {
     const options = [];
-    if (this.props.conducting) {
-      options.unshift(<option key={-1} value={-1}>Conductor</option>);
-    }
     _.pairs(this.props.bots).map(([botUuid, bot]) => {
       // Only allow jobs to be stared on a bot in the state "connected"
       if (bot.state !== 'connected') {
         return;
       }
+
+      // If the bot specifies an array of supported file fileTypes
+      // Then make sure the selected file is consumable by the bot
+      if (bot.info.fileTypes.length > 0) {
+        const supportedFileList = bot.info.fileTypes.filter(filetype => {
+          return this.state.fileName && this.state.fileName.indexOf(filetype) !== -1;
+        });
+        if (supportedFileList.length <= 0) {
+          return;
+        }
+      }
+
       options.push(<option key={botUuid} value={botUuid}>{bot.settings.name}</option>);
     });
     return (
@@ -100,7 +109,7 @@ export default class Files extends React.Component {
     return (
     <Modal show={this.state.showModal} onHide={this.close}>
       <Modal.Header closeButton>
-        <Modal.Title>Modal heading</Modal.Title>
+        <Modal.Title>Select bot to process file</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <div>{this.state.fileUuid}</div>
@@ -116,9 +125,17 @@ export default class Files extends React.Component {
   }
 
   render() {
-    const files = _.pairs(this.props.files).map(([fileKey, file]) => {
+    const fileListArray = _.pairs(this.props.files);
+
+    // Sort the files so the most recently used is first
+    fileListArray.sort((a, b) => {
+      return new Date(a[1].dateChanged).getTime() > new Date(b[1].dateChanged).getTime();
+    });
+
+    const files = fileListArray.map(([fileKey, file]) => {
       return <File key={file.uuid} file={file} handleProcessFile={this.handleProcessFile}/>;
     });
+
     return (<div>
       {this.renderModal()}
       <div id="files" className="container">
